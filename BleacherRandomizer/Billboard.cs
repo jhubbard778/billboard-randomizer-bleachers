@@ -36,7 +36,12 @@ namespace BleacherRandomizer
                 PNG = GlobalVariables.CROWD_BILLBOARD_PATH + png
             });
         }
+    }
 
+    public class Billboard_Coords {
+        public double X_coord { get; set; }
+        public double Y_coord { get; set; }
+        public double Z_coord { get; set; }
     }
 
 }

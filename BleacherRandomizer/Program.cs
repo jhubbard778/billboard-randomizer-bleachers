@@ -57,6 +57,75 @@ namespace BleacherRandomizer {
                 return -1;
             }
 
+            Console.WriteLine("Bleachers Added...");
+            Console.WriteLine("\nAdding Billboards...");
+            Random Random_Num = new Random();
+            // Go through the bleachers list
+            for (int i = 0; i < GlobalVariables.bleachers_list.Count; i++) {
+                Bleacher current_bleacher = GlobalVariables.bleachers_list[i];
+                Console.WriteLine("\n\tAdding to bleacher " + (i + 1).ToString() + "...");
+                
+                double min_x = current_bleacher.Top_Left_X;
+                double max_x = current_bleacher.Top_Right_X;
+                double min_z = current_bleacher.Top_Left_Z;
+                double max_z = current_bleacher.Top_Right_Z;
+
+                // Go through each bleacher
+                for (int current_row = GlobalVariables.NUM_OF_STEPS; current_row > 0; current_row--) {
+                    Console.WriteLine("\t\tAdding billboards to row " + current_row.ToString() + "...");
+                    GlobalVariables.current_row_billboards = new List<Billboard_Coords>();
+                    GlobalVariables.billboard_distances = new List<double>();
+
+                    double max_distance_between_billboards = GlobalVariables.BLEACHER_LENGTH;
+                    // While we can fit another billboard between two billboards
+                    while (max_distance_between_billboards > 2 * GlobalVariables.BILLBOARD_PADDING) {
+                        double x, y, z;
+                        int index;
+
+                        // If we have a constant X set the X to the min_x and get random Z
+                        if (min_x == max_x) {
+                            x = min_x;
+                            z = (Random_Num.NextDouble() * (max_z - min_z)) + min_z;
+                            if (!Check_Distances(x, z)) continue;
+                            double distance = Get_Distance(min_x, min_z, x, z);
+                            index = Add_To_Distances_List(distance);
+                        } else {
+                            // Get random X if min_x != max_x
+                            x = (Random_Num.NextDouble() * (max_x - min_x)) + min_x;
+                            z = min_z;
+                            // If we do not have a constant Z calculate the Z based on the slope of the length and X value
+                            if (min_z != max_z) {
+                                // y = mx + b, but z's are flipped so y = mx - b,
+                                // but we are going through a point so y + offset = mx - b, therefore y = mx - b - offset
+                                // then flip it back to sim axis
+                                z = Math.Abs(current_bleacher.Length_Slope * x - min_z - min_x);
+                            }
+                            if (!Check_Distances(x, z)) continue;
+                            double distance = Get_Distance(min_x, min_z, x, z);
+                            index = Add_To_Distances_List(distance);
+                        }
+
+                        y = GlobalVariables.STEP_HEIGHTS[current_row - 1];
+                        // Add the billboard to billboard coords list
+                        GlobalVariables.current_row_billboards.Insert(index, new Billboard_Coords {
+                            X_coord = x,
+                            Y_coord = y,
+                            Z_coord = z
+                        });
+
+                        max_distance_between_billboards = Get_Max_Distance_Between_Billboards(min_x, min_z, max_x, max_z);
+
+                    }
+
+                    Write_Current_Row_Billboards();
+
+                    min_x += current_bleacher.Step_Change_X;
+                    max_x += current_bleacher.Step_Change_X;
+                    min_z += current_bleacher.Step_Change_Z;
+                    max_z += current_bleacher.Step_Change_Z;
+
+                }
+            }
 
             Console.WriteLine("\x1b[32mCompleted\x1b[0m");
             return 0;
@@ -82,6 +151,8 @@ namespace BleacherRandomizer {
             double top_left_x = center_x - (0.5 * GlobalVariables.BLEACHER_LENGTH);
             double top_left_z = center_z + (0.5 * GlobalVariables.BLEACHER_WIDTH);
             double padded_top_left_x = top_left_x + GlobalVariables.EDGE_PADDING;
+            // Since the bleacher isn't exactly a perfect rectangle, we'll use 1.7 * the bleacher step width to get
+            // to the first step where we actually want to place crowd members.  1.5 would be the ideal number though.
             double padded_top_left_z = top_left_z - (1.7 * GlobalVariables.BLEACHER_STEP_WIDTH);
 
             double top_right_x = center_x + (0.5 * GlobalVariables.BLEACHER_LENGTH);
@@ -107,6 +178,7 @@ namespace BleacherRandomizer {
             double rotated_top_right_x = Rotate_X(top_right_x, top_right_z, center_x, center_z, angle);
             double rotated_top_right_z = Rotate_Z(top_right_x, top_right_z, center_x, center_z, angle);
             double padded_rot_top_right_x = Rotate_X(padded_top_right_x, padded_top_right_z, center_x, center_z, angle);
+            double padded_rot_top_right_z = Rotate_Z(padded_top_right_x, padded_top_right_z, center_x, center_z, angle);
 
             // Vector Slope for the length and width
             double vector_slope_length = Get_Slope(rotated_top_left_x, rotated_top_left_z, rotated_top_right_x, rotated_top_right_z);
@@ -114,6 +186,7 @@ namespace BleacherRandomizer {
 
             // Flip the Z's back to Sim Origin Plane
             padded_rot_top_left_z = Math.Abs(padded_rot_top_left_z);
+            padded_rot_top_right_z = Math.Abs(padded_rot_top_right_z);
 
             double[] step_changes = new double[2];
             if (Double.IsNaN(vector_slope_width)) {
@@ -129,6 +202,7 @@ namespace BleacherRandomizer {
                 
                 // For Zero Slope
                 if (rotated_top_left_z != rotated_bottom_left_z) {
+                    // If the angle is 0 then we travel in the negative Z direction
                     if (Math.Round((angle % (Math.PI * 2)), 3) == 0) {
                         multiplier = -1;
                     }
@@ -138,22 +212,8 @@ namespace BleacherRandomizer {
 
             } else step_changes = Get_Step_Changes(vector_slope_width);
 
-            Bleacher.Add_Bleacher(padded_rot_top_left_x, center_y, padded_rot_top_left_z, padded_rot_top_right_x,
-                vector_slope_length, vector_slope_width, step_changes[0], step_changes[1]);
-        }
-
-        private static double Rotate_X(double x0, double z0, double xc, double zc, double angle) { 
-            return (x0 - xc) * Math.Cos(angle) - (z0 - zc) * Math.Sin(angle) + xc;
-        }
-        private static double Rotate_Z(double x0, double z0, double xc, double zc, double angle) {
-            return (x0 - xc) * Math.Sin(angle) + (z0 - zc) * Math.Cos(angle) + zc;
-        }
-        private static double Get_Slope(double x1, double y1, double x2, double y2) {
-            // If we have undefined slope or 0 slope, return so
-            if (Math.Round(x1, 8) == Math.Round(x2, 8) || Math.Round(y1,8) == Math.Round(y2, 8)) {
-                return double.NaN;
-            }
-            return ((y2 - y1) / (x2 - x1));
+            Bleacher.Add_Bleacher(padded_rot_top_left_x, padded_rot_top_left_z, padded_rot_top_right_x, 
+                padded_rot_top_right_z, vector_slope_length, vector_slope_width, step_changes[0], step_changes[1]);
         }
 
         private static double[] Get_Step_Changes(double slope_W) {
@@ -178,5 +238,112 @@ namespace BleacherRandomizer {
             return steps;
         }
 
+        private static bool Check_Distances(double x1, double z1) {
+            // if we don't have any billboards yet just add it
+            if (GlobalVariables.current_row_billboards.Count == 0) return true;
+
+            // Calculate the distance from x and z from each point in the billboard coords
+            for (int i = 0; i < GlobalVariables.current_row_billboards.Count; i++) {
+                double x2, z2, distance;
+                x2 = GlobalVariables.current_row_billboards[i].X_coord;
+                z2 = GlobalVariables.current_row_billboards[i].Z_coord;
+                distance = Get_Distance(x1, z1, x2, z2);
+                // If the distance between the billboard and any other coordinate is less than
+                // the billboard padding we will return false
+                if (distance < GlobalVariables.BILLBOARD_PADDING) return false;
+            }
+            return true;
+        }
+
+        private static int Add_To_Distances_List(double distance) {
+            int count = GlobalVariables.billboard_distances.Count;
+            if (count == 0) {
+                GlobalVariables.billboard_distances.Insert(0, distance);
+                return 0;
+            }
+
+            // If the distance is shorter than the lowest distance
+            if (distance < GlobalVariables.billboard_distances[0]) {
+                GlobalVariables.billboard_distances.Insert(0, distance);
+                return 0;
+            }
+
+            for (int i = 0; i < count; i++) {
+                // if we've reached the end
+                if (i == count - 1) {
+                    // and the distance is greater, then add
+                    if (distance > GlobalVariables.billboard_distances[i]) {
+                        GlobalVariables.billboard_distances.Add(distance);
+                        return i + 1;
+                    }
+                    // If it's less, then insert
+                    GlobalVariables.billboard_distances.Insert(i, distance);
+                    return i;
+                }
+                // If the distance is greater than the current item but less than the next item, insert after current item
+                if (distance > GlobalVariables.billboard_distances[i] && distance < GlobalVariables.billboard_distances[i + 1]) {
+                    GlobalVariables.billboard_distances.Insert(i + 1, distance);
+                    return i + 1;
+                }
+            }
+
+            // Upon error
+            return -1;
+        }
+
+        private static double Get_Max_Distance_Between_Billboards(double origin_x, double origin_z, double end_x, double end_z) {
+            int count = GlobalVariables.current_row_billboards.Count;
+            double max_distance = 0;
+            double x1, z1, x2, z2, distance;
+
+            // First get the distance from the origin to the first billboard
+            x1 = origin_x;
+            z1 = origin_z;
+            x2 = GlobalVariables.current_row_billboards[0].X_coord;
+            z2 = GlobalVariables.current_row_billboards[0].Z_coord;
+            distance = Get_Distance(x1, z1, x2, z2);
+            if (distance > max_distance) max_distance = distance;
+
+            for (int i = 0; i < count - 1; i++) {
+                // Get the distance between each billboard
+                x1 = GlobalVariables.current_row_billboards[i].X_coord;
+                z1 = GlobalVariables.current_row_billboards[i].Z_coord;
+                x2 = GlobalVariables.current_row_billboards[i+1].X_coord;
+                z2 = GlobalVariables.current_row_billboards[i+1].Z_coord;
+                distance = Get_Distance(x1, z1, x2, z2);
+                if (distance > max_distance) max_distance = distance;
+            }
+
+            // Finally get the distance between the last billboard and the edge
+            x1 = GlobalVariables.current_row_billboards[count-1].X_coord;
+            z1 = GlobalVariables.current_row_billboards[count-1].Z_coord;
+            x2 = end_x;
+            z2 = end_z;
+            distance = Get_Distance(x1, z1, x2, z2);
+            if (distance > max_distance) max_distance = distance;
+
+            return max_distance;
+        }
+
+        private static void Write_Current_Row_Billboards() {
+
+        }
+
+        private static double Rotate_X(double x0, double z0, double xc, double zc, double angle) {
+            return (x0 - xc) * Math.Cos(angle) - (z0 - zc) * Math.Sin(angle) + xc;
+        }
+        private static double Rotate_Z(double x0, double z0, double xc, double zc, double angle) {
+            return (x0 - xc) * Math.Sin(angle) + (z0 - zc) * Math.Cos(angle) + zc;
+        }
+        private static double Get_Distance(double x1, double y1, double x2, double y2) {
+            return Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
+        }
+        private static double Get_Slope(double x1, double y1, double x2, double y2) {
+            // If we have undefined slope or 0 slope, return so
+            if (Math.Round(x1, 8) == Math.Round(x2, 8) || Math.Round(y1, 8) == Math.Round(y2, 8)) {
+                return double.NaN;
+            }
+            return ((y2 - y1) / (x2 - x1));
+        }
     }
 }
