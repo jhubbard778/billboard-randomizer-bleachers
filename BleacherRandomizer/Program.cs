@@ -232,8 +232,13 @@ namespace BleacherRandomizer {
             // 3) Multiply Standard Vector Components by Factor
             double x = 1 * factor_Width;
             double z = slope_W * factor_Width;
+
+            // put the angle within 1 rotation
             double modulated_angle = (angle % (2 * Math.PI));
+            // put the rotation in terms of counter-clockwise rotations
             if (modulated_angle < 0) modulated_angle += (2 * Math.PI);
+
+            // Change all vector components to be correct in terms of signs
 
             // If angle is between 0 and pi/2, +x +z
             if (modulated_angle > 0 && modulated_angle < (Math.PI / 2)) {
@@ -247,16 +252,16 @@ namespace BleacherRandomizer {
                 if (z > 0) z *= -1;
             }
 
-            // If angle is between pi and 3pi/2, -x, +z
+            // If angle is between pi and 3pi/2, -x, -z
             if (modulated_angle > Math.PI && modulated_angle < (1.5 * Math.PI)) {
                 if (x > 0) x *= -1;
-                if (z < 0) z *= -1;
+                if (z > 0) z *= -1;
             }
 
-            // If angle is between 3pi/2 and 2pi, -x, -z
+            // If angle is between 3pi/2 and 2pi, -x, +z
             if (modulated_angle > (1.5 * Math.PI) && modulated_angle < (2 * Math.PI)) {
                 if (x > 0) x *= -1;
-                if (z > 0) z *= -1;
+                if (z < 0) z *= -1;
             }
 
             steps[0] = x;
