@@ -59,6 +59,7 @@ namespace BleacherRandomizer {
 
             Console.WriteLine("Bleachers Added...");
             Console.WriteLine("\nAdding Billboards...");
+            GlobalVariables.billboard_outfile = File.CreateText(Environment.CurrentDirectory + "\\billboards_out");
             Random Random_Num = new Random();
             // Go through the bleachers list
             for (int i = 0; i < GlobalVariables.bleachers_list.Count; i++) {
@@ -95,10 +96,8 @@ namespace BleacherRandomizer {
                             z = min_z;
                             // If we do not have a constant Z calculate the Z based on the slope of the length and X value
                             if (min_z != max_z) {
-                                // y = mx + b, but z's are flipped so y = mx - b,
-                                // but we are going through a point so y + offset = mx - b, therefore y = mx - b - offset
-                                // then flip it back to sim axis
-                                z = Math.Abs(current_bleacher.Length_Slope * x - min_z - min_x);
+                                // y - y1 = m(x-x1), but y axis flipped in sim.  So y + y1 = m(x-x1)
+                                z = Math.Abs(current_bleacher.Length_Slope * (x - min_x) - min_z);
                             }
                             if (!Check_Distances(x, z)) continue;
                             double distance = Get_Distance(min_x, min_z, x, z);
@@ -117,17 +116,18 @@ namespace BleacherRandomizer {
 
                     }
 
-                    Write_Current_Row_Billboards();
+                    Write_Current_Row_Billboards(min_x, min_z, max_x, max_z, current_row, i);
 
                     min_x += current_bleacher.Step_Change_X;
                     max_x += current_bleacher.Step_Change_X;
                     min_z += current_bleacher.Step_Change_Z;
                     max_z += current_bleacher.Step_Change_Z;
-
+                    
                 }
             }
-
-            Console.WriteLine("\x1b[32mCompleted\x1b[0m");
+            // Close the StreamReader
+            GlobalVariables.billboard_outfile.Close();
+            Console.WriteLine("\n\x1b[32mCompleted\x1b[0m");
             return 0;
         }
 
@@ -188,49 +188,61 @@ namespace BleacherRandomizer {
             padded_rot_top_left_z = Math.Abs(padded_rot_top_left_z);
             padded_rot_top_right_z = Math.Abs(padded_rot_top_right_z);
 
+            // Calculate step changes X and Z for the width
             double[] step_changes = new double[2];
             if (Double.IsNaN(vector_slope_width)) {
 
                 // For Undefined Slope
-                int multiplier = 1;
+                int multiplier = 2;
                 // If the angle is 3pi/2 then we travel negative in the X direction
                 if (Math.Round((angle % (Math.PI * 2)), 3) == Math.Round(((3 * Math.PI) / 2), 3)) {
-                    multiplier = -1;
+                    multiplier = -2;
                 }
                 step_changes[0] = multiplier * GlobalVariables.BLEACHER_STEP_WIDTH;
                 step_changes[1] = 0;
                 
                 // For Zero Slope
                 if (rotated_top_left_z != rotated_bottom_left_z) {
-                    // If the angle is 0 then we travel in the negative Z direction
-                    if (Math.Round((angle % (Math.PI * 2)), 3) == 0) {
-                        multiplier = -1;
+                    // If the angle is pi then we travel in the negative Z direction
+                    if (Math.Round((angle % (Math.PI * 2)), 3) == Math.Round(Math.PI, 3)) {
+                        multiplier = -2;
                     }
                     step_changes[0] = 0;
                     step_changes[1] = multiplier * GlobalVariables.BLEACHER_STEP_WIDTH;
                 }
 
-            } else step_changes = Get_Step_Changes(vector_slope_width);
+            } else step_changes = Get_Step_Changes(vector_slope_length, vector_slope_width);
 
             Bleacher.Add_Bleacher(padded_rot_top_left_x, padded_rot_top_left_z, padded_rot_top_right_x, 
                 padded_rot_top_right_z, vector_slope_length, vector_slope_width, step_changes[0], step_changes[1]);
         }
 
-        private static double[] Get_Step_Changes(double slope_W) {
+        private static double[] Get_Step_Changes(double slope_L, double slope_W) {
             double[] steps = new double[2];
 
             // Slope is RISE/RUN So we can use our slope value as RISE and 1 as our RUN
             // Now we calculate the magnitude of a vector with components <1,slope>
 
+
             // 1) Calculate Standard Magnitude of Width
             double mag_W = Math.Sqrt(Math.Pow(slope_W, 2) + 1);
 
             // 2) Divide desired magnitude by standard magnitude
-            double factor_Width = GlobalVariables.BLEACHER_STEP_WIDTH / mag_W;
+            double factor_Width = (2 * GlobalVariables.BLEACHER_STEP_WIDTH) / mag_W;
 
-            // 3) Multiply Standard Vector Components by Factor
+            // 3) Multiply Standard Vector Components by Factor, Z is inverted so we need to flip it to sim axis
             double x = 1 * factor_Width;
-            double z = slope_W * factor_Width;
+            // We have to use -1 * the number instead of Math.Abs because there is the possiblity where we need to decrease
+            // the z value, we can't always increase
+            double z = -1 * (slope_W * factor_Width);
+
+            // if our length slope is negative flip the signs of X and Z
+            if (slope_L < 0) {
+                x *= -1;
+                if (slope_W < 0) {
+                    z *= -1;
+                }
+            }
 
             steps[0] = x;
             steps[1] = z;
@@ -302,6 +314,9 @@ namespace BleacherRandomizer {
             x2 = GlobalVariables.current_row_billboards[0].X_coord;
             z2 = GlobalVariables.current_row_billboards[0].Z_coord;
             distance = Get_Distance(x1, z1, x2, z2);
+            // This will help us decide in our loop if we can fit a billboard between the origin and the first billboard
+            // since we don't need to 'fit' another billboard between two billboards
+            distance *= 2;
             if (distance > max_distance) max_distance = distance;
 
             for (int i = 0; i < count - 1; i++) {
@@ -320,12 +335,27 @@ namespace BleacherRandomizer {
             x2 = end_x;
             z2 = end_z;
             distance = Get_Distance(x1, z1, x2, z2);
+            // Same thing as origin, figure out if we can fit a billboard between last billboard and end point
+            distance *= 2;
             if (distance > max_distance) max_distance = distance;
 
             return max_distance;
         }
 
-        private static void Write_Current_Row_Billboards() {
+        private static void Write_Current_Row_Billboards(double min_x, double min_z, double max_x, double max_z, int current_row, int bleacher) {
+
+            List<Billboard_Coords> row_coords = GlobalVariables.current_row_billboards;
+            int count = row_coords.Count;
+
+            GlobalVariables.billboard_outfile.WriteLine("\nBleacher " + (bleacher + 1).ToString() + " - Row " + current_row.ToString());
+            GlobalVariables.billboard_outfile.WriteLine("\tTOP LEFT COORDINATE: (" + min_x.ToString() + ", " + min_z.ToString() + ')');
+            GlobalVariables.billboard_outfile.WriteLine("\tTOP RIGHT COORDINATE: (" + max_x.ToString() + ", " + max_z.ToString() + ')');
+
+            // Go through the current row billboards and output the coords
+            for (int i = 0; i < count; i++) {
+                GlobalVariables.billboard_outfile.WriteLine("\t\t(" + row_coords[i].X_coord.ToString() + ", " + 
+                    row_coords[i].Y_coord.ToString() + ", " + row_coords[i].Z_coord.ToString() + ')');
+            }
 
         }
 

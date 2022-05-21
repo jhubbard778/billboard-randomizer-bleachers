@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
 
 namespace BleacherRandomizer
 {
@@ -23,5 +24,7 @@ namespace BleacherRandomizer
 
         public static List<Billboard_Coords> current_row_billboards;
         public static List<double> billboard_distances;
+
+        public static StreamWriter billboard_outfile;
     }
 }
