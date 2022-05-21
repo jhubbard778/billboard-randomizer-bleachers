@@ -20,7 +20,7 @@ namespace BleacherRandomizer
             Add_Billboard(8, 1, "dude.png");
             Add_Billboard(9, 1, "g1.png");
             Add_Billboard(9, 1, "g2.png");
-            Add_Billboard(7, 1, "g3.png");
+            Add_Billboard(9, 1, "g3.png");
             Add_Billboard(9, 1, "g4.png");
             Add_Billboard(7, 1.5, "g5.png");
             Add_Billboard(11, 1, "g6.png");

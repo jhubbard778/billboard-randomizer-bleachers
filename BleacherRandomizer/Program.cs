@@ -375,7 +375,7 @@ namespace BleacherRandomizer {
             // Go through the current row billboards and output the coords
             for (int i = 0; i < count; i++) {
                 // Get random index from 0 to the billboard list count - 1
-                int index = random.Next(0, GlobalVariables.billboards_list.Count - 1);
+                int index = random.Next(0, GlobalVariables.billboards_list.Count);
                 GlobalVariables.billboard_outfile.WriteLine('[' + row_coords[i].X_coord.ToString() + 
                     ' ' + row_coords[i].Y_coord.ToString() + ' ' + row_coords[i].Z_coord.ToString() + "] " +
                     GlobalVariables.billboards_list[index].Billboard_Size.ToString() + ' ' + 
