@@ -12,7 +12,7 @@ namespace BleacherRandomizer
         public const double BLEACHER_STEP_WIDTH = 1.47235294;
         
         public const double EDGE_PADDING = 2;
-        public const double BILLBOARD_PADDING = 5;
+        public const double BILLBOARD_PADDING = 4;
 
         public readonly static double[] STEP_HEIGHTS = new double[] { 0.5, 1.75, 3, 4.25, 5.5, 6.75, 7.75, 9 };
         public readonly static int NUM_OF_STEPS = STEP_HEIGHTS.Length;

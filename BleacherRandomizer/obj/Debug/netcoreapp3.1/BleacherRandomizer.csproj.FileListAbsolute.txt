@@ -11,3 +11,16 @@ C:\Users\Jakob\source\repos\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherR
 C:\Users\Jakob\source\repos\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.dll
 C:\Users\Jakob\source\repos\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.pdb
 C:\Users\Jakob\source\repos\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.genruntimeconfig.cache
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\bin\Debug\netcoreapp3.1\BleacherRandomizer.exe
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\bin\Debug\netcoreapp3.1\BleacherRandomizer.deps.json
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\bin\Debug\netcoreapp3.1\BleacherRandomizer.runtimeconfig.json
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\bin\Debug\netcoreapp3.1\BleacherRandomizer.runtimeconfig.dev.json
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\bin\Debug\netcoreapp3.1\BleacherRandomizer.dll
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\bin\Debug\netcoreapp3.1\BleacherRandomizer.pdb
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.csprojAssemblyReference.cache
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.AssemblyInfoInputs.cache
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.AssemblyInfo.cs
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.csproj.CoreCompileInputs.cache
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.dll
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.pdb
+C:\Users\Jakob\Documents\GitHub\billboard-randomizer-bleachers\BleacherRandomizer\obj\Debug\netcoreapp3.1\BleacherRandomizer.genruntimeconfig.cache

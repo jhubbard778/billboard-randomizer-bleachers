@@ -232,16 +232,15 @@ namespace BleacherRandomizer {
 
             // 3) Multiply Standard Vector Components by Factor, Z is inverted so we need to flip it to sim axis
             double x = 1 * factor_Width;
-            // We have to use -1 * the number instead of Math.Abs because there is the possiblity where we need to decrease
-            // the z value, we can't always increase
-            double z = -1 * (slope_W * factor_Width);
+            int mulitplier = 1;
+            if (slope_W < 0) mulitplier = -1;
+
+            double z = mulitplier * (slope_W * factor_Width);
 
             // if our length slope is negative flip the signs of X and Z
             if (slope_L < 0) {
                 x *= -1;
-                if (slope_W < 0) {
-                    z *= -1;
-                }
+                z *= -1;
             }
 
             steps[0] = x;
