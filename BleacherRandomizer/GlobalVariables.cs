@@ -11,7 +11,9 @@ namespace BleacherRandomizer
         public const double BLEACHER_WIDTH = 25.03;
         public const double BLEACHER_STEP_WIDTH = 1.47235294;
         
+        // Min distance from edge to first/last billboard
         public const double EDGE_PADDING = 2;
+        // Min distance between two billboards
         public const double BILLBOARD_PADDING = 4;
 
         public readonly static double[] STEP_HEIGHTS = new double[] { 0.5, 1.75, 3, 4.25, 5.5, 6.75, 7.75, 9 };

@@ -191,13 +191,13 @@ namespace BleacherRandomizer {
             // Calculate step changes X and Z for the width
             double[] step_changes = new double[2];
             if (Double.IsNaN(vector_slope_width)) {
-
-                // For Undefined Slope
                 int multiplier = 2;
+                // For Undefined Slope
                 // If the angle is 3pi/2 then we travel negative in the X direction
                 if (Math.Round((angle % (Math.PI * 2)), 3) == Math.Round(((3 * Math.PI) / 2), 3)) {
                     multiplier = -2;
                 }
+
                 step_changes[0] = multiplier * GlobalVariables.BLEACHER_STEP_WIDTH;
                 step_changes[1] = 0;
                 
@@ -211,18 +211,17 @@ namespace BleacherRandomizer {
                     step_changes[1] = multiplier * GlobalVariables.BLEACHER_STEP_WIDTH;
                 }
 
-            } else step_changes = Get_Step_Changes(vector_slope_length, vector_slope_width);
+            } else step_changes = Get_Step_Changes(vector_slope_width, angle);
 
             Bleacher.Add_Bleacher(padded_rot_top_left_x, padded_rot_top_left_z, padded_rot_top_right_x, 
-                padded_rot_top_right_z, vector_slope_length, vector_slope_width, step_changes[0], step_changes[1]);
+                padded_rot_top_right_z, vector_slope_length, step_changes[0], step_changes[1]);
         }
 
-        private static double[] Get_Step_Changes(double slope_L, double slope_W) {
+        private static double[] Get_Step_Changes(double slope_W, double angle) {
             double[] steps = new double[2];
 
             // Slope is RISE/RUN So we can use our slope value as RISE and 1 as our RUN
             // Now we calculate the magnitude of a vector with components <1,slope>
-
 
             // 1) Calculate Standard Magnitude of Width
             double mag_W = Math.Sqrt(Math.Pow(slope_W, 2) + 1);
@@ -230,17 +229,34 @@ namespace BleacherRandomizer {
             // 2) Divide desired magnitude by standard magnitude
             double factor_Width = (2 * GlobalVariables.BLEACHER_STEP_WIDTH) / mag_W;
 
-            // 3) Multiply Standard Vector Components by Factor, Z is inverted so we need to flip it to sim axis
+            // 3) Multiply Standard Vector Components by Factor
             double x = 1 * factor_Width;
-            int mulitplier = 1;
-            if (slope_W < 0) mulitplier = -1;
+            double z = slope_W * factor_Width;
+            double modulated_angle = (angle % (2 * Math.PI));
+            if (modulated_angle < 0) modulated_angle += (2 * Math.PI);
 
-            double z = mulitplier * (slope_W * factor_Width);
+            // If angle is between 0 and pi/2, +x +z
+            if (modulated_angle > 0 && modulated_angle < (Math.PI / 2)) {
+                if (x < 0) x *= -1;
+                if (z < 0) z *= -1;
+            }
 
-            // if our length slope is negative flip the signs of X and Z
-            if (slope_L < 0) {
-                x *= -1;
-                z *= -1;
+            // If angle is between pi/2 and pi, +x, -z
+            if (modulated_angle > (Math.PI / 2) && modulated_angle < Math.PI) {
+                if (x < 0) x *= -1;
+                if (z > 0) z *= -1;
+            }
+
+            // If angle is between pi and 3pi/2, -x, +z
+            if (modulated_angle > Math.PI && modulated_angle < (1.5 * Math.PI)) {
+                if (x > 0) x *= -1;
+                if (z < 0) z *= -1;
+            }
+
+            // If angle is between 3pi/2 and 2pi, -x, -z
+            if (modulated_angle > (1.5 * Math.PI) && modulated_angle < (2 * Math.PI)) {
+                if (x > 0) x *= -1;
+                if (z > 0) z *= -1;
             }
 
             steps[0] = x;
@@ -344,16 +360,22 @@ namespace BleacherRandomizer {
         private static void Write_Current_Row_Billboards(double min_x, double min_z, double max_x, double max_z, int current_row, int bleacher) {
 
             List<Billboard_Coords> row_coords = GlobalVariables.current_row_billboards;
+            Random random = new Random();
             int count = row_coords.Count;
 
-            GlobalVariables.billboard_outfile.WriteLine("\nBleacher " + (bleacher + 1).ToString() + " - Row " + current_row.ToString());
-            GlobalVariables.billboard_outfile.WriteLine("\tTOP LEFT COORDINATE: (" + min_x.ToString() + ", " + min_z.ToString() + ')');
-            GlobalVariables.billboard_outfile.WriteLine("\tTOP RIGHT COORDINATE: (" + max_x.ToString() + ", " + max_z.ToString() + ')');
+            //GlobalVariables.billboard_outfile.WriteLine("\nBleacher " + (bleacher + 1).ToString() + " - Row " + current_row.ToString());
+            //GlobalVariables.billboard_outfile.WriteLine("\tTOP LEFT COORDINATE: (" + min_x.ToString() + ", " + min_z.ToString() + ')');
+            //GlobalVariables.billboard_outfile.WriteLine("\tTOP RIGHT COORDINATE: (" + max_x.ToString() + ", " + max_z.ToString() + ')');
 
             // Go through the current row billboards and output the coords
             for (int i = 0; i < count; i++) {
-                GlobalVariables.billboard_outfile.WriteLine("\t\t(" + row_coords[i].X_coord.ToString() + ", " + 
-                    row_coords[i].Y_coord.ToString() + ", " + row_coords[i].Z_coord.ToString() + ')');
+                // Get random index from 0 to the billboard list count - 1
+                int index = random.Next(0, GlobalVariables.billboards_list.Count - 1);
+                GlobalVariables.billboard_outfile.WriteLine('[' + row_coords[i].X_coord.ToString() + 
+                    ' ' + row_coords[i].Y_coord.ToString() + ' ' + row_coords[i].Z_coord.ToString() + "] " +
+                    GlobalVariables.billboards_list[index].Billboard_Size.ToString() + ' ' + 
+                    GlobalVariables.billboards_list[index].Aspect.ToString() + ' ' + 
+                    GlobalVariables.billboards_list[index].PNG);
             }
 
         }
