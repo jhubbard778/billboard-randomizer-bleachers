@@ -100,7 +100,7 @@ namespace BleacherRandomizer {
                         } else {
                             // Get random X if min_x != max_x
                             x = (Random_Num.NextDouble() * (max_open_x - min_open_x)) + min_open_x;
-                            z = min_open_z;
+                            z = min_z;
                             // If we do not have a constant Z calculate the Z based on the slope of the length and X value
                             if (min_z != max_z) {
                                 // y - y1 = m(x-x1), but y axis flipped in sim.  So y + y1 = m(x-x1)
