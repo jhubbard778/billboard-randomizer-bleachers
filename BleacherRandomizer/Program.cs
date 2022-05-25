@@ -49,7 +49,7 @@ namespace BleacherRandomizer {
                     continue;
                 }
 
-                Calculate_Slopes_And_Add_Bleacher(center_x, center_y, center_z, angle);
+                Calculate_Slopes_And_Add_Bleacher(center_x, center_z, angle);
             }
 
             if (Num_Bleachers == 0) {
@@ -71,8 +71,15 @@ namespace BleacherRandomizer {
                 double min_z = current_bleacher.Top_Left_Z;
                 double max_z = current_bleacher.Top_Right_Z;
 
-                // Go through each bleacher
+                // Go through each bleacher row
                 for (int current_row = GlobalVariables.NUM_OF_STEPS; current_row > 0; current_row--) {
+                    
+                    // Get the max distances start and end points and pick a random number between them
+                    double min_open_x = min_x;
+                    double min_open_z = min_z;
+                    double max_open_x = max_x;
+                    double max_open_z = max_z;
+
                     Console.WriteLine("\t\tAdding billboards to row " + current_row.ToString() + "...");
                     GlobalVariables.current_row_billboards = new List<Billboard_Coords>();
                     GlobalVariables.billboard_distances = new List<double>();
@@ -85,19 +92,19 @@ namespace BleacherRandomizer {
 
                         // If we have a constant X set the X to the min_x and get random Z
                         if (min_x == max_x) {
-                            x = min_x;
-                            z = (Random_Num.NextDouble() * (max_z - min_z)) + min_z;
+                            x = min_open_x;
+                            z = (Random_Num.NextDouble() * (max_open_z - min_open_z)) + min_open_z;
                             if (!Check_Distances(x, z)) continue;
                             double distance = Get_Distance(min_x, min_z, x, z);
                             index = Add_To_Distances_List(distance);
                         } else {
                             // Get random X if min_x != max_x
-                            x = (Random_Num.NextDouble() * (max_x - min_x)) + min_x;
-                            z = min_z;
+                            x = (Random_Num.NextDouble() * (max_open_x - min_open_x)) + min_open_x;
+                            z = min_open_z;
                             // If we do not have a constant Z calculate the Z based on the slope of the length and X value
                             if (min_z != max_z) {
                                 // y - y1 = m(x-x1), but y axis flipped in sim.  So y + y1 = m(x-x1)
-                                z = Math.Abs(current_bleacher.Length_Slope * (x - min_x) - min_z);
+                                z = Math.Abs((current_bleacher.Length_Slope * (x - min_x)) - min_z);
                             }
                             if (!Check_Distances(x, z)) continue;
                             double distance = Get_Distance(min_x, min_z, x, z);
@@ -112,8 +119,12 @@ namespace BleacherRandomizer {
                             Z_coord = z
                         });
 
-                        max_distance_between_billboards = Get_Max_Distance_Between_Billboards(min_x, min_z, max_x, max_z);
-
+                        double[] values = Get_Max_Distance_Between_Billboards(min_x, min_z, max_x, max_z);
+                        max_distance_between_billboards = values[0];
+                        min_open_x = values[1];
+                        min_open_z = values[2];
+                        max_open_x = values[3];
+                        max_open_z = values[4];
                     }
 
                     Write_Current_Row_Billboards(min_x, min_z, max_x, max_z, current_row, i);
@@ -142,7 +153,7 @@ namespace BleacherRandomizer {
             Console.WriteLine("\n\x1b[31m> No File named 'statues' found!\x1b[0m\n");
         }
 
-        private static void Calculate_Slopes_And_Add_Bleacher(double center_x, double center_y, double center_z, double angle) {
+        private static void Calculate_Slopes_And_Add_Bleacher(double center_x, double center_z, double angle) {
 
             // Origin (0,0) in MX Simulator is top left, so we need to flip our z-axis before rotation
             center_z = -center_z;
@@ -323,9 +334,11 @@ namespace BleacherRandomizer {
             return -1;
         }
 
-        private static double Get_Max_Distance_Between_Billboards(double origin_x, double origin_z, double end_x, double end_z) {
+        private static double[] Get_Max_Distance_Between_Billboards(double origin_x, double origin_z, double end_x, double end_z) {
             int count = GlobalVariables.current_row_billboards.Count;
-            double max_distance = 0;
+            // values = {max_distance, min_open_x, min_open_z, max_open_x, max_open_z}
+            double[] values = new double[5];
+            values[0] = 0;
             double x1, z1, x2, z2, distance;
 
             // First get the distance from the origin to the first billboard
@@ -337,7 +350,9 @@ namespace BleacherRandomizer {
             // This will help us decide in our loop if we can fit a billboard between the origin and the first billboard
             // since we don't need to 'fit' another billboard between two billboards
             distance *= 2;
-            if (distance > max_distance) max_distance = distance;
+            if (distance > values[0]) {
+                values = Change_Values_Arr(distance, x1, z1, x2, z2);
+            }
 
             for (int i = 0; i < count - 1; i++) {
                 // Get the distance between each billboard
@@ -346,7 +361,9 @@ namespace BleacherRandomizer {
                 x2 = GlobalVariables.current_row_billboards[i+1].X_coord;
                 z2 = GlobalVariables.current_row_billboards[i+1].Z_coord;
                 distance = Get_Distance(x1, z1, x2, z2);
-                if (distance > max_distance) max_distance = distance;
+                if (distance > values[0]) {
+                    values = Change_Values_Arr(distance, x1, z1, x2, z2);
+                }
             }
 
             // Finally get the distance between the last billboard and the edge
@@ -357,9 +374,11 @@ namespace BleacherRandomizer {
             distance = Get_Distance(x1, z1, x2, z2);
             // Same thing as origin, figure out if we can fit a billboard between last billboard and end point
             distance *= 2;
-            if (distance > max_distance) max_distance = distance;
+            if (distance > values[0]) {
+                values = Change_Values_Arr(distance, x1, z1, x2, z2);
+            }
 
-            return max_distance;
+            return values;
         }
 
         private static void Write_Current_Row_Billboards(double min_x, double min_z, double max_x, double max_z, int current_row, int bleacher) {
@@ -400,6 +419,16 @@ namespace BleacherRandomizer {
                 return double.NaN;
             }
             return ((y2 - y1) / (x2 - x1));
+        }
+
+        private static double[] Change_Values_Arr(double distance, double x1, double z1, double x2, double z2) {
+            double[] arr = new double[5];
+            arr[0] = distance;
+            arr[1] = x1;
+            arr[2] = z1;
+            arr[3] = x2;
+            arr[4] = z2;
+            return arr;
         }
     }
 }
