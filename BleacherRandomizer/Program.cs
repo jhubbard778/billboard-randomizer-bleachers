@@ -40,7 +40,6 @@ namespace BleacherRandomizer {
                 bool can_parse = true;
 
                 if (!double.TryParse(line_args[0], out double center_x)) can_parse = false;
-                if (!double.TryParse(line_args[1], out double center_y)) can_parse = false;
                 if (!double.TryParse(line_args[2], out double center_z)) can_parse = false;
                 if (!double.TryParse(line_args[3], out double angle)) can_parse = false;
 
